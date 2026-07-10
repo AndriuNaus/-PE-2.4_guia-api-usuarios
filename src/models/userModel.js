@@ -1,56 +1,49 @@
-import pool from  "../db/pool.js"
+import pool from "../db/pool.js";
 
-//crud de usuarios
+// CRUD de usuarios
 
-//metodo para obtener todos
+// Método para obtener todos
+export const findAll = async () => {
+  const [rows] = await pool.execute('SELECT * FROM users ORDER BY name');
+  return rows;
+};
 
-export const findAll= async ()=>{
-    const [rows]= await pool.execute('SELECT * FROM users ORDER BY name'
+// Obtener por ID
+export const findById = async (id) => {
+  const [rows] = await pool.execute('SELECT * FROM users WHERE id = ?', [id]);
+  return rows[0];
+};
 
-    );
-    return rows;
+// Crear un usuario
+export const createUser = async ({ name, email }) => {
+  const [result] = await pool.execute('INSERT INTO users (name, email) VALUES (?, ?)', [name, email]);
+  return findById(result.insertId);
+};
 
-}
-//obtener por id 
-export const findById = async (id) =>{
-    const [rows] = await pool.execute('SELECT * FROM users WHERE id = ?', [id]);
-    return rows[0];
-}
+// Actualizar un usuario
+export const updateUser = async (id, { name, email }) => {
+  const fields = [];
+  const values = [];
 
-//crear un usuario
+  if (name !== undefined) {
+    fields.push('name = ?');
+    values.push(name);
+  }
 
-export const createUser = async ({name,email})=>{
-    const [result] = await pool.execute('INSERT INTO users VALUES (?,?)',[name,email]);
-    return findById (result.insertId);
+  if (email !== undefined) {
+    fields.push('email = ?');
+    values.push(email);
+  }
 
+  if (fields.length === 0) return findById(id);
 
-}
-//update 
-export const updateUser = async(id,{name,email})=>{
-    const fields =[];
-    const VALUES=[];
+  values.push(id);
+  await pool.execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+  return findById(id);
+};
 
-    if (name !==undefined) {fields.push('name=?'); values.push(name);}
-    //fields =['name= ?']
-    //fields=['Çharlie']
-
-    //ambas condiciones
-    //fields=['Name = ?'.'email=?']
-    //values=['charlie,''charile@gmail.com']
-    if (email !==undefined) {fields.push('email=?'); values.push(email);}
-    // == compara si los valores son iguales independiente del tipo de dato 
-    //=== comparacion exacta,valida el tipo de dato 
-    
-    if(fields.length === 0)return findById(id);
-    values.push(id);
-    //values= ['Charlie','charlie@gmail.com', 12]
-    await pool.execute(`UPDATE users set ${fields.join(',')} where id = ?`,)
-    return findById (id);
-}
-//metodo delete 
-export const removeUser =(id) => {
-    const[resullt] = pool.execute ('Delete FROM users WHERE id = ?', [id]);
-    return result.affectedRows > 0 ;
-
-}
-
+// Método delete
+export const removeUser = async (id) => {
+  const [result] = await pool.execute('DELETE FROM users WHERE id = ?', [id]);
+  return result.affectedRows > 0;
+};
